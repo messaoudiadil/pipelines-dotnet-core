@@ -1,9 +1,14 @@
-# This Dockerfile creates the final image to be published to Docker or
-# Azure Container Registry
-# Create a container with the compiled asp.net core app
-FROM microsoft/aspnetcore:2.0
-# Create app directory
+FROM microsoft/dotnet:sdk AS build
 WORKDIR /app
-# Copy only the deployment artifacts
-COPY /out .
-ENTRYPOINT ["dotnet", "dotnetcore-sample.dll"]
+
+COPY *.csproj ./
+RUN dotnet restore
+
+COPY . ./
+RUN dotnet publish -c Release -o publishdir
+
+FROM microsoft/dotnet:aspnetcore-runtime AS runtime
+EXPOSE 5555
+WORKDIR /app
+COPY --from=build /app/publishdir .
+ENTRYPOINT ["dotnet", "WebAppContainer.dll"]
